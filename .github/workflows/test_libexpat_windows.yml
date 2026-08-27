@@ -10,6 +10,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      MSYS_NO_PATHCONV: 1
+      MSYS2_ARG_CONV_EXCL: "*"
     steps:
       - uses: actions/checkout@v4
 
