@@ -1,0 +1,31 @@
+name: Test libexpat on Windows
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate Module
+        run: |
+          bazel run //tools:bcr_validation -- --check libexpat@2.8.3
+
+      - name: Setup Presubmit Repos
+        run: |
+          bazel run //tools:setup_presubmit_repos -- --module libexpat@2.8.3
+
+      - name: Build and Test libexpat
+        shell: bash
+        run: |
+          cd temp_test_repos/libexpat/2.8.3/anonymous_module
+          bazel build -- @libexpat
+          bazel test --copt=-DXML_TESTING -- @libexpat//:expat_tests
