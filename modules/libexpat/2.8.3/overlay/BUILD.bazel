@@ -126,6 +126,10 @@ cc_library(
         "lib/*.c",
         "lib/*.h",
     ]),
+    defines = select({
+        "@platforms//os:windows": ["XML_STATIC"],
+        "//conditions:default": [],
+    }),
     includes = ["lib"],
 )
 
