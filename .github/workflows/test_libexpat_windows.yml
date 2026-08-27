@@ -7,6 +7,9 @@ on:
 jobs:
   test-windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +27,6 @@ jobs:
           bazel run //tools:setup_presubmit_repos -- --module libexpat@2.8.3
 
       - name: Build and Test libexpat
-        shell: bash
         run: |
           cd temp_test_repos/libexpat/2.8.3/anonymous_module
           bazel build -- @libexpat
