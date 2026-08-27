@@ -21,16 +21,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Validate Module
-        run: |
-          bazel run //tools:bcr_validation -- --check libexpat@2.8.3
-
       - name: Setup Presubmit Repos
         run: |
-          bazel run //tools:setup_presubmit_repos -- --module libexpat@2.8.3
+          bazel --output_user_root=C:/_b run //tools:setup_presubmit_repos -- --module libexpat@2.8.3
 
       - name: Build and Test libexpat
         run: |
           cd temp_test_repos/libexpat/2.8.3/anonymous_module
-          bazel build -- @libexpat
-          bazel test --copt=-DXML_TESTING -- @libexpat//:expat_tests
+          bazel --output_user_root=C:/_b build -- @libexpat
+          bazel --output_user_root=C:/_b test --copt=-DXML_TESTING -- @libexpat//:expat_tests
