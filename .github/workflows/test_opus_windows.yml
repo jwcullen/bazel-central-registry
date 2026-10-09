@@ -1,0 +1,32 @@
+name: Test opus on Windows
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      MSYS_NO_PATHCONV: 1
+      MSYS2_ARG_CONV_EXCL: "*"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Presubmit Repos
+        run: |
+          bazel --output_user_root=C:/_b run //tools:setup_presubmit_repos -- --module opus@1.6.1
+
+      - name: Build and Test opus
+        run: |
+          cd temp_test_repos/opus/1.6.1/test_module/module_src
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc build -- @opus//...
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc test -- @opus//...
