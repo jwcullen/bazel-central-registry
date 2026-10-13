@@ -3,6 +3,24 @@ load("//:defs.bzl", "AVX2_COPTS", "OPUS_COPTS", "OPUS_INCLUDES", "OPUS_LINKOPTS"
 
 package(default_visibility = ["//:__subpackages__"])
 
+config_setting(
+    name = "is_windows_clang_mingw",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@rules_cc//cc/compiler:compiler": "clang"},
+)
+
+config_setting(
+    name = "is_windows_clang_cl",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@rules_cc//cc/compiler:compiler": "clang-cl"},
+)
+
+config_setting(
+    name = "is_windows_msvc",
+    constraint_values = ["@platforms//os:windows"],
+    flag_values = {"@rules_cc//cc/compiler:compiler": "msvc-cl"},
+)
+
 cc_library(
     name = "config",
     hdrs = ["config.h"],
