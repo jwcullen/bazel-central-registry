@@ -1,0 +1,108 @@
+name: Test opus on Windows
+
+on:
+  push:
+    branches:
+      - test-opus-windows
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [msvc-cl, clang-cl, mingw]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      MSYS_NO_PATHCONV: 1
+      MSYS2_ARG_CONV_EXCL: "*"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Presubmit Repos
+        run: |
+          bazel --output_user_root=C:/_b run //tools:setup_presubmit_repos -- --module opus@1.6.1
+
+      - name: Build and Test opus (msvc-cl)
+        if: matrix.compiler == 'msvc-cl'
+        run: |
+          cd temp_test_repos/opus/1.6.1/test_module/module_src
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc build -- @opus//...
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc test --test_output=errors -- @opus//...
+
+      - name: Build and Test opus (clang-cl)
+        if: matrix.compiler == 'clang-cl'
+        run: |
+          cd temp_test_repos/opus/1.6.1/test_module/module_src
+          cat << 'EOF' >> MODULE.bazel
+
+          cc_configure = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+          use_repo(cc_configure, "local_config_cc")
+          EOF
+          cat << 'EOF' >> BUILD.bazel
+
+          platform(
+              name = "x64_windows-clang-cl",
+              constraint_values = [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows",
+                  "@rules_cc//cc/private/toolchain:clang-cl",
+              ],
+          )
+          EOF
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc build \
+            --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl \
+            --extra_execution_platforms=@opus//:x64_windows-clang-cl \
+            -- @opus//...
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc test \
+            --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl \
+            --extra_execution_platforms=@opus//:x64_windows-clang-cl \
+            --test_output=errors \
+            -- @opus//...
+
+      - name: Build and Test opus (mingw)
+        if: matrix.compiler == 'mingw'
+        env:
+          BAZEL_SH: "C:/msys64/usr/bin/bash.exe"
+        run: |
+          C:/msys64/usr/bin/pacman.exe -Sy --noconfirm --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
+          export PATH="/c/msys64/mingw64/bin:$PATH"
+          cd temp_test_repos/opus/1.6.1/test_module/module_src
+          cat << 'EOF' >> MODULE.bazel
+
+          cc_configure = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+          use_repo(cc_configure, "local_config_cc")
+          EOF
+          cat << 'EOF' >> BUILD.bazel
+
+          platform(
+              name = "x64_windows_mingw",
+              constraint_values = [
+                  "@platforms//cpu:x86_64",
+                  "@platforms//os:windows",
+                  "@rules_cc//cc/private/toolchain:mingw",
+              ],
+          )
+          EOF
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc build \
+            --repo_env=BAZEL_SH="C:/msys64/usr/bin/bash.exe" \
+            --action_env=PATH \
+            --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows_mingw \
+            --extra_execution_platforms=@opus//:x64_windows_mingw \
+            -- @opus//...
+          bazel --output_user_root=C:/_b --nosystem_rc --nohome_rc test \
+            --repo_env=BAZEL_SH="C:/msys64/usr/bin/bash.exe" \
+            --action_env=PATH \
+            --test_env=PATH \
+            --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows_mingw \
+            --extra_execution_platforms=@opus//:x64_windows_mingw \
+            --test_output=errors \
+            -- @opus//...
